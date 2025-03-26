@@ -117,9 +117,6 @@ Your application will be available at the URL provided by Pinggy.io.
 - `jobs/` - Job status tracking (not included in repository)
 - `transcripts/` - Generated transcript files (not included in repository)
 
-## License
-
-[MIT License](LICENSE)
 
 ## Acknowledgements
 
