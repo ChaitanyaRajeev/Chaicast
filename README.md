@@ -2,7 +2,10 @@
 
 Chaicast is a web application that transforms text articles into podcast-style audio conversations. It uses AI to convert plain text into engaging dialogues between two speakers and then generates high-quality audio using text-to-speech technology.
 
-![Chaicast Screenshot](https://i.imgur.com/your-screenshot-url.jpg)
+Chaicast Screenshot:
+
+<img width="1440" alt="image" src="https://github.com/user-attachments/assets/e4deb6a7-0d4d-4b12-8c15-41dfce2b6b41" />
+
 
 ## Features
 
