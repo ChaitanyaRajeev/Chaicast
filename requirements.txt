@@ -1,0 +1,9 @@
+fastapi==0.109.0
+uvicorn==0.25.0
+python-multipart==0.0.6
+openai==1.11.0
+requests==2.31.0
+pydub==0.25.1
+elevenlabs==0.2.27
+python-dotenv==1.0.0
+flask==2.3.3

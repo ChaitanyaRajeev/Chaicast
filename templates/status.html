@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body text-center p-4">
+                
+                {% if job.status == 'pending' or job.status == 'processing' %}
+                <!-- Loading animation -->
+                <div class="my-5">
+                    <div class="spinner-grow text-primary mx-2" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="spinner-grow text-info mx-2" style="width: 3rem; height: 3rem; animation-delay: 0.2s" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="spinner-grow text-primary mx-2" style="width: 3rem; height: 3rem; animation-delay: 0.4s" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                
+                <h3 class="mt-4">Creating Your Podcast</h3>
+                <p class="lead mb-5">Sit back and relax while we generate your podcast. This may take a few minutes...</p>
+                
+                <div class="d-grid gap-2 col-md-6 mx-auto">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Back to Home</a>
+                </div>
+                {% endif %}
+                
+                {% if job.status == 'completed' and job.result %}
+                <div class="my-4">
+                    <div class="success-icon mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="mb-4">Your Podcast is Ready!</h3>
+                    
+                    <div class="mb-4">
+                        <audio controls class="audio-player w-100">
+                            <source src="{{ url_for('download_audio', job_id=job.id) }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <a href="{{ url_for('download_audio', job_id=job.id) }}" class="btn btn-success" download>
+                            <i class="bi bi-download me-1"></i>Download Audio
+                        </a>
+                        <a href="{{ url_for('download_transcript', job_id=job.id) }}" class="btn btn-outline-primary" download>
+                            <i class="bi bi-file-text me-1"></i>Download Transcript
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-plus-circle me-1"></i>New Podcast
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if job.status == 'failed' and job.error %}
+                <div class="my-4">
+                    <div class="error-icon mb-4">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="text-danger mb-3">Something Went Wrong</h3>
+                    <div class="alert alert-danger">
+                        <p>{{ job.error }}</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">Try Again</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<div id="job-data" 
+     data-job-id="{{ job.id }}" 
+     data-job-status="{{ job.status }}"
+     data-is-active="{{ 'true' if job.status == 'pending' or job.status == 'processing' else 'false' }}">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Get job data from the hidden div
+    var jobDataElement = document.getElementById('job-data');
+    var jobId = jobDataElement.getAttribute('data-job-id');
+    var isActive = jobDataElement.getAttribute('data-is-active') === 'true';
+    var refreshInterval;
+    
+    function refreshStatus() {
+        if (!isActive) return;
+        
+        fetch('/api/status/' + jobId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'pending' && data.status !== 'processing') {
+                    // Job is no longer active, reload the page to show results
+                    clearInterval(refreshInterval);
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.error('Error checking status:', error));
+    }
+    
+    if (isActive) {
+        // Check every 3 seconds
+        refreshInterval = setInterval(refreshStatus, 3000);
+        
+        // Start the first check immediately
+        refreshStatus();
+    }
+</script>
+{% endblock %}
