@@ -117,6 +117,9 @@ Your application will be available at the URL provided by Pinggy.io.
 - `jobs/` - Job status tracking (not included in repository)
 - `transcripts/` - Generated transcript files (not included in repository)
 
+Highlevel Diagram :
+![image](https://github.com/user-attachments/assets/6d563cdc-d6b3-4f8c-a89f-0081773c704d)
+
 
 ## Acknowledgements
 
