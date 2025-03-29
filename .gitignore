@@ -38,8 +38,3 @@ temp_*
 # OS specific
 .DS_Store
 Thumbs.db
-
-# Chaicast specific directories
-audio/
-jobs/
-transcripts/
