@@ -10,7 +10,8 @@ import logging
 import re
 from pathlib import Path
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file, abort
+from functools import wraps
 from dotenv import load_dotenv
 from podcast import convert_text_to_podcast, create_output_directories
 import threading
@@ -37,6 +38,27 @@ logger = logging.getLogger("chaicast_flask")
 # Initialize Flask app
 app = Flask(__name__)
 app.config['DEBUG'] = True
+
+# Get API key from environment variable
+API_KEY = os.getenv("API_KEY", "default-insecure-key")  # Default for development only
+
+# API key authorization decorator
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if API key is provided in header or as a query parameter
+        provided_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+        
+        # For form submissions, also check form data
+        if request.method == 'POST' and not provided_key:
+            provided_key = request.form.get('api_key')
+            
+        # If no key provided or key doesn't match, return 401 Unauthorized
+        if not provided_key or provided_key != API_KEY:
+            return jsonify({"error": "Unauthorized. Invalid or missing API key."}), 401
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Enable CORS for browser preview
 @app.after_request
@@ -161,6 +183,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/convert', methods=['POST'])
+@require_api_key
 def convert_article():
     """Handle article conversion requests"""
     try:
@@ -225,6 +248,7 @@ def job_status(job_id):
         return render_template('error.html', error=str(e)), 500
 
 @app.route('/api/status/<job_id>')
+@require_api_key
 def api_job_status(job_id):
     """API endpoint to check job status"""
     try:
@@ -254,6 +278,7 @@ def api_job_status(job_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/download/transcript/<job_id>', methods=['GET'])
+@require_api_key
 def download_transcript(job_id):
     """Download the transcript file for a job"""
     try:
@@ -274,6 +299,7 @@ def download_transcript(job_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/download/audio/<job_id>', methods=['GET'])
+@require_api_key
 def download_audio(job_id):
     """Download the audio file for a job"""
     try:
