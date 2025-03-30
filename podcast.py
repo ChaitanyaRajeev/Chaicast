@@ -195,15 +195,17 @@ class SimpleTextToSpeech:
             logger.info(f"Generating audio for segment {i+1}/{len(segments)} with voice {segment['voice']}")
             
             try:
-                # Call OpenAI TTS API
-                response = openai.audio.speech.create(
-                    model="tts-1",
+                # Call OpenAI TTS API (using v0.28.1 compatible call)
+                response = openai.Completion.create(
+                    engine="tts-1",
+                    prompt=segment["text"],
                     voice=segment["voice"],
-                    input=segment["text"]
+                    response_format="mp3"
                 )
                 
                 # Save to temp file
-                response.stream_to_file(temp_file)
+                with open(temp_file, "wb") as f:
+                    f.write(response.audio)
                 audio_files.append(temp_file)
             except Exception as e:
                 logger.error(f"Error generating speech for segment {i+1}: {str(e)}")
@@ -354,23 +356,18 @@ class SimpleContentGenerator:
         Rules:
         1. Start with {custom_intro or "a brief introduction to the topic"}
         2. Create a natural back-and-forth dialogue that covers the main points
-        3. Add conversational elements, questions, and reactions
-        4. Make it sound like a real conversation, not a robotic reading
-        5. End with a brief conclusion
-        6. Format using <Person1>...</Person1> for Alex and <Person2>...</Person2> for Taylor tags exactly
-        7. Use the term "Chaicast" or mention "Your Personal Generative AI Podcast developed by Chai"
-        8. DO NOT include "Person 1:" or "Person 2:" or "Alex:" or "Taylor:" in the actual spoken text
-
-        DO NOT:
-        - Add any unnecessary branding
-        - Invent facts not present in the original text
+        3. Mark Alex's lines with <Person1>Alex: ... </Person1>
+        4. Mark Taylor's lines with <Person2>Taylor: ... </Person2>
+        5. End with a brief conclusion and sign-off
+        6. Don't fabricate statistics or information not in the source text
         """
         
         logger.info(f"Input text length: {len(input_text)} characters")
         
         try:
             logger.info("Calling OpenAI API to generate conversation...")
-            response = openai.chat.completions.create(
+            # Using OpenAI v0.28.1 compatible API call
+            response = openai.ChatCompletion.create(
                 model="gpt-4-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -384,11 +381,8 @@ class SimpleContentGenerator:
             logger.info(f"Generated transcript length: {len(transcript)} characters")
             return transcript
         except Exception as e:
-            logger.error(f"Error generating conversation: {e}")
-            logger.warning("Falling back to simplified format...")
-            # Simplified fallback format
-            return f"<Person1>{input_text}</Person1>"
-
+            logger.error(f"Error generating conversation: {str(e)}")
+            raise
 
 def create_output_directories():
     """Create directories for output files"""
