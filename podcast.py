@@ -195,17 +195,31 @@ class SimpleTextToSpeech:
             logger.info(f"Generating audio for segment {i+1}/{len(segments)} with voice {segment['voice']}")
             
             try:
-                # Call OpenAI TTS API (using v0.28.1 compatible call)
-                response = openai.Completion.create(
-                    engine="tts-1",
-                    prompt=segment["text"],
-                    voice=segment["voice"],
-                    response_format="mp3"
+                # Use direct REST API call for TTS instead of OpenAI library
+                headers = {
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                }
+                data = {
+                    "model": "tts-1",
+                    "input": segment["text"],
+                    "voice": segment["voice"]
+                }
+                
+                # Make the API request
+                response = requests.post(
+                    "https://api.openai.com/v1/audio/speech",
+                    headers=headers,
+                    json=data
                 )
+                
+                if response.status_code != 200:
+                    raise Exception(f"API error: {response.text}")
                 
                 # Save to temp file
                 with open(temp_file, "wb") as f:
-                    f.write(response.audio)
+                    f.write(response.content)
+                
                 audio_files.append(temp_file)
             except Exception as e:
                 logger.error(f"Error generating speech for segment {i+1}: {str(e)}")
