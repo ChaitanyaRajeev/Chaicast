@@ -6,6 +6,9 @@
         <div class="card">
             <div class="card-body p-4">
                 <form action="{{ url_for('convert_article') }}" method="post">
+                    <!-- Hidden API key field -->
+                    <input type="hidden" name="api_key" value="c5aff223eecb5c243bbdaf1683c1422965a5c23adc0917bbce9dac3fce0112e0">
+                    
                     <div class="mb-4">
                         <div class="d-flex justify-content-center mb-3">
                             <div class="btn-group" role="group" aria-label="Input type">

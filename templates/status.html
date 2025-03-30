@@ -37,16 +37,16 @@
                     
                     <div class="mb-4">
                         <audio controls class="audio-player w-100">
-                            <source src="{{ url_for('download_audio', job_id=job.id) }}" type="audio/mpeg">
+                            <source src="{{ url_for('download_audio', job_id=job.id) }}?api_key=c5aff223eecb5c243bbdaf1683c1422965a5c23adc0917bbce9dac3fce0112e0" type="audio/mpeg">
                             Your browser does not support the audio element.
                         </audio>
                     </div>
                     
                     <div class="d-flex justify-content-center gap-2 mb-3">
-                        <a href="{{ url_for('download_audio', job_id=job.id) }}" class="btn btn-success" download>
+                        <a href="{{ url_for('download_audio', job_id=job.id) }}?api_key=c5aff223eecb5c243bbdaf1683c1422965a5c23adc0917bbce9dac3fce0112e0" class="btn btn-success" download>
                             <i class="bi bi-download me-1"></i>Download Audio
                         </a>
-                        <a href="{{ url_for('download_transcript', job_id=job.id) }}" class="btn btn-outline-primary" download>
+                        <a href="{{ url_for('download_transcript', job_id=job.id) }}?api_key=c5aff223eecb5c243bbdaf1683c1422965a5c23adc0917bbce9dac3fce0112e0" class="btn btn-outline-primary" download>
                             <i class="bi bi-file-text me-1"></i>Download Transcript
                         </a>
                         <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
@@ -91,11 +91,16 @@
     var jobId = jobDataElement.getAttribute('data-job-id');
     var isActive = jobDataElement.getAttribute('data-is-active') === 'true';
     var refreshInterval;
+    var apiKey = "c5aff223eecb5c243bbdaf1683c1422965a5c23adc0917bbce9dac3fce0112e0";
     
     function refreshStatus() {
         if (!isActive) return;
         
-        fetch('/api/status/' + jobId)
+        fetch('/api/status/' + jobId, {
+            headers: {
+                'X-API-Key': apiKey
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status !== 'pending' && data.status !== 'processing') {
