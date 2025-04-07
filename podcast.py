@@ -19,7 +19,7 @@ from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG level to see all diagnostic messages
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -143,6 +143,18 @@ class SimpleTextToSpeech:
     
     def _convert_with_openai(self, text, output_file):
         """Use OpenAI's TTS API to convert text to speech"""
+        # Add debug logging for transcript format
+        logger.info("Transcript format diagnosis")
+        logger.info(f"Transcript length: {len(text)} characters")
+        logger.info(f"First 100 chars: {text[:100].replace('\n', '\\n')}")
+        
+        # Check for expected tags
+        p1_tags = text.count("<Person1>")
+        p1_close_tags = text.count("</Person1>")
+        p2_tags = text.count("<Person2>")
+        p2_close_tags = text.count("</Person2>")
+        logger.info(f"Tag counts: <Person1>: {p1_tags}, </Person1>: {p1_close_tags}, <Person2>: {p2_tags}, </Person2>: {p2_close_tags}")
+        
         # Split text by speaker tags
         segments = []
         current_pos = 0
@@ -175,6 +187,8 @@ class SimpleTextToSpeech:
                 next_p1 = text.find("<Person1>", content_start)
                 next_p2 = text.find("<Person2>", content_start)
                 
+                logger.debug(f"Person1 segment found: tag_end={tag_end}, content_start={content_start}, next_p1={next_p1}, next_p2={next_p2}")
+                
                 if next_p1 != -1 and next_p2 != -1:
                     content_end = min(next_p1, next_p2)
                 elif next_p1 != -1:
@@ -185,6 +199,7 @@ class SimpleTextToSpeech:
                     content_end = len(text)
                 
                 content = text[content_start:content_end].strip()
+                logger.debug(f"Person1 raw content ({len(content)} chars): '{content[:50]}...'")
                 segments.append({"text": content, "voice": person1_voice})
                 current_pos = content_end
                 
@@ -202,6 +217,8 @@ class SimpleTextToSpeech:
                 next_p1 = text.find("<Person1>", content_start)
                 next_p2 = text.find("<Person2>", content_start)
                 
+                logger.debug(f"Person2 segment found: tag_end={tag_end}, content_start={content_start}, next_p1={next_p1}, next_p2={next_p2}")
+                
                 if next_p1 != -1 and next_p2 != -1:
                     content_end = min(next_p1, next_p2)
                 elif next_p1 != -1:
@@ -212,6 +229,7 @@ class SimpleTextToSpeech:
                     content_end = len(text)
                 
                 content = text[content_start:content_end].strip()
+                logger.debug(f"Person2 raw content ({len(content)} chars): '{content[:50]}...'")
                 segments.append({"text": content, "voice": person2_voice})
                 current_pos = content_end
         
