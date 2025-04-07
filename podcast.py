@@ -146,7 +146,9 @@ class SimpleTextToSpeech:
         # Add debug logging for transcript format
         logger.info("Transcript format diagnosis")
         logger.info(f"Transcript length: {len(text)} characters")
-        logger.info(f"First 100 chars: {text[:100].replace('\n', '\\n')}")
+        # Fix the backslash issue by using repr() instead of manual replacement
+        sample_text = text[:100]
+        logger.info(f"First 100 chars: {repr(sample_text)}")
         
         # Check for expected tags
         p1_tags = text.count("<Person1>")
