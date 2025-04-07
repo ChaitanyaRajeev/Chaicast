@@ -225,8 +225,30 @@ def convert_article():
         # Process the job (in a real app, you'd use a task queue like Celery)
         threading.Thread(target=process_podcast_job, args=(job_id, text, tts_model, custom_intro)).start()
         
-        # Redirect to the status page
-        return redirect(url_for('job_status', job_id=job_id))
+        # Generate status URL for monitoring
+        status_url = url_for('job_status', job_id=job_id, _external=True)
+        
+        # Check if the request wants JSON (API) or HTML (browser)
+        # If the request Accept header prefers JSON or a specific format param is provided
+        if (request.headers.get('Accept') and 'application/json' in request.headers.get('Accept')) or \
+           request.args.get('format') == 'json' or request.form.get('format') == 'json':
+            # Create JSON response for API clients
+            json_response = {
+                "success": True,
+                "job_id": job_id,
+                "status": "pending",
+                "status_url": status_url,
+                "api_status_url": url_for('api_job_status', job_id=job_id, _external=True)
+            }
+            
+            # Log the JSON response being sent
+            logger.info(f"Converting article: Returning JSON response: {json.dumps(json_response)}")
+            
+            return jsonify(json_response)
+        else:
+            # Redirect to the status page for browser clients
+            logger.info(f"Converting article: Redirecting to status page: {status_url}")
+            return redirect(status_url)
         
     except Exception as e:
         logger.error(f"Error creating job: {str(e)}")

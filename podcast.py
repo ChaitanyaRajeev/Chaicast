@@ -154,43 +154,77 @@ class SimpleTextToSpeech:
         
         # Process each part of text with appropriate voice
         while current_pos < len(text):
-            p1_start = text.find("<Person1>", current_pos)
-            p2_start = text.find("<Person2>", current_pos)
+            p1_tag_start = text.find("<Person1>", current_pos)
+            p2_tag_start = text.find("<Person2>", current_pos)
             
-            if p1_start == -1 and p2_start == -1:
+            if p1_tag_start == -1 and p2_tag_start == -1:
                 break
-            
-            if (p1_start < p2_start and p1_start != -1) or p2_start == -1:
+                
+            # Find the actual content after the tag-enclosed speaker identifier
+            if (p1_tag_start < p2_tag_start and p1_tag_start != -1) or p2_tag_start == -1:
                 # Person1 segment
-                start = p1_start + len("<Person1>")
-                end = text.find("</Person1>", start)
-                if end == -1:
-                    end = len(text)
+                tag_end = text.find("</Person1>", p1_tag_start)
+                if tag_end == -1:
+                    current_pos = len(text)
+                    continue
+                    
+                # Extract the text AFTER the closing tag
+                content_start = tag_end + len("</Person1>")
                 
-                content = text[start:end].strip()
-                # Remove any "Person 1:" or "Alex:" prefixes that might have been added
-                content = re.sub(r'^(Person 1:|Alex:)\s*', '', content)
+                # Find the end of this content (either next speaker tag or end of text)
+                next_p1 = text.find("<Person1>", content_start)
+                next_p2 = text.find("<Person2>", content_start)
+                
+                if next_p1 != -1 and next_p2 != -1:
+                    content_end = min(next_p1, next_p2)
+                elif next_p1 != -1:
+                    content_end = next_p1
+                elif next_p2 != -1:
+                    content_end = next_p2
+                else:
+                    content_end = len(text)
+                
+                content = text[content_start:content_end].strip()
                 segments.append({"text": content, "voice": person1_voice})
-                current_pos = end + len("</Person1>")
+                current_pos = content_end
                 
-            elif (p2_start < p1_start and p2_start != -1) or p1_start == -1:
+            elif (p2_tag_start < p1_tag_start and p2_tag_start != -1) or p1_tag_start == -1:
                 # Person2 segment
-                start = p2_start + len("<Person2>")
-                end = text.find("</Person2>", start)
-                if end == -1:
-                    end = len(text)
+                tag_end = text.find("</Person2>", p2_tag_start)
+                if tag_end == -1:
+                    current_pos = len(text)
+                    continue
+                    
+                # Extract the text AFTER the closing tag
+                content_start = tag_end + len("</Person2>")
                 
-                content = text[start:end].strip()
-                # Remove any "Person 2:" or "Taylor:" prefixes that might have been added
-                content = re.sub(r'^(Person 2:|Taylor:)\s*', '', content)
+                # Find the end of this content (either next speaker tag or end of text)
+                next_p1 = text.find("<Person1>", content_start)
+                next_p2 = text.find("<Person2>", content_start)
+                
+                if next_p1 != -1 and next_p2 != -1:
+                    content_end = min(next_p1, next_p2)
+                elif next_p1 != -1:
+                    content_end = next_p1
+                elif next_p2 != -1:
+                    content_end = next_p2
+                else:
+                    content_end = len(text)
+                
+                content = text[content_start:content_end].strip()
                 segments.append({"text": content, "voice": person2_voice})
-                current_pos = end + len("</Person2>")
+                current_pos = content_end
         
         logger.info(f"Found {len(segments)} speaker segments")
         
         # Create audio segments
         audio_files = []
         for i, segment in enumerate(segments):
+            # Skip empty segments to prevent API errors
+            if not segment["text"].strip():
+                logger.warning(f"Skipping empty segment {i+1} - no text content to process")
+                continue
+                
             temp_file = f"temp_audio_{i}.mp3"
             logger.info(f"Generating audio for segment {i+1}/{len(segments)} with voice {segment['voice']}")
             
@@ -205,6 +239,11 @@ class SimpleTextToSpeech:
                     "input": segment["text"],
                     "voice": segment["voice"]
                 }
+                
+                # Validate input text is not empty before sending request
+                if not data["input"]:
+                    logger.error(f"Empty text for segment {i+1}. Skipping this segment.")
+                    continue
                 
                 # Make the API request
                 response = requests.post(
@@ -368,7 +407,7 @@ class SimpleContentGenerator:
         between two hosts named Alex and Taylor.
 
         Rules:
-        1. Start with {custom_intro or "a brief introduction to the topic"}
+        1. Start with a welcome message like "Welcome to Chaicast, your generative AI podcaster" and then {custom_intro or "proceed with a brief introduction to the topic"}
         2. Create a natural back-and-forth dialogue that covers the main points
         3. Mark Alex's lines with <Person1>Alex: ... </Person1>
         4. Mark Taylor's lines with <Person2>Taylor: ... </Person2>
